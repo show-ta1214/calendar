@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title th:text="${shownMonth.year + '年' + shownMonth.monthValue + '月 | ひより'}">ひより</title><link rel="stylesheet" th:href="@{/css/style.css}"><script th:src="@{/js/theme.js}"></script></head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <button class="theme-toggle" type="button" aria-label="ダークモードに切り替える" aria-pressed="false"><span aria-hidden="true">☾</span></button>
+        <a class="brand" th:href="@{/}"><span class="brand-mark">ひ</span>ひより</a>
+        <a class="add-button" th:href="@{/schedules/new}"><span>＋</span>予定を追加</a>
+        <nav class="side-nav" aria-label="メインメニュー"><a class="active" th:href="@{/}"><span aria-hidden="true">▦</span>カレンダー</a><a href="#upcoming"><span aria-hidden="true">☷</span>これからの予定</a></nav>
+        <p class="side-note">毎日の予定を、<br>すっきりひとつに。</p>
+    </aside>
+    <main class="calendar-main">
+        <header class="calendar-header"><div><p class="date-caption">MONTHLY CALENDAR</p><h1 th:text="${shownMonth.year + '年' + shownMonth.monthValue + '月'}">2026年8月</h1></div><div class="month-controls"><a aria-label="前の月" th:href="@{/(month=${previousMonth})}"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></a><a class="today-button" th:href="@{/}">今日</a><a aria-label="次の月" th:href="@{/(month=${nextMonth})}"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a></div></header>
+        <p class="flash success" th:if="${successMessage}" th:text="${successMessage}"></p><p class="flash error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+        <section class="calendar-wrap" aria-label="月間カレンダー">
+            <div class="weekday sunday">日</div><div class="weekday">月</div><div class="weekday">火</div><div class="weekday">水</div><div class="weekday">木</div><div class="weekday">金</div><div class="weekday saturday">土</div>
+            <article class="day" th:each="day : ${days}" th:classappend="${(!day.currentMonth ? ' outside' : '') + (day.today ? ' is-today' : '') + (day.holiday ? ' holiday' : '')}">
+                <a class="day-number" th:href="@{/schedules/new(date=${day.date})}" th:text="${day.date.dayOfMonth}" th:attr="aria-label=${day.date + 'に予定を追加'}">1</a>
+                <span class="holiday-name" th:if="${day.holiday}" th:text="${day.holidayName}">祝日</span>
+                <div class="events"><a class="event" th:each="item : ${day.schedules}" th:href="@{/schedules/{id}/edit(id=${item.id})}" th:classappend="${item.color}"><span th:if="${item.startTime}" th:text="${#temporals.format(item.startTime, 'HH:mm')}">10:00</span><span th:text="${item.title}">予定</span></a></div>
+            </article>
+        </section>
+    </main>
+    <aside class="upcoming" id="upcoming"><div class="upcoming-heading"><h2>これからの予定</h2><span th:text="${#lists.size(upcoming) + '件'}">0件</span></div><p class="upcoming-empty" th:if="${#lists.isEmpty(upcoming)}">これからの予定はありません。</p><a class="upcoming-item" th:each="item : ${upcoming}" th:href="@{/schedules/{id}/edit(id=${item.id})}"><time th:datetime="${item.eventDate}" th:text="${#temporals.format(item.eventDate, 'M月d日（E）')}">8月18日（火）</time><div><i th:class="${item.color}"></i><strong th:text="${item.startTime == null ? '終日' : #temporals.format(item.startTime, 'HH:mm')}">11:00</strong><span th:text="${item.title}">予定</span></div></a></aside>
+</div>
+</body></html>
