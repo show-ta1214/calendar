@@ -104,7 +104,7 @@ public class CalendarController {
     }
 
     private Schedule toSchedule(ScheduleForm f) { return new Schedule(f.getTitle(), f.getEventDate(), f.getEndDate(), f.getStartTime(), f.getEndTime(), f.getMemo(), safeColor(f.getColor())); }
-    private String safeColor(String color) { return Set.of("sage", "coral", "ochre").contains(color) ? color : "sage"; }
+    private String safeColor(String color) { return Set.of("sage", "coral", "ochre", "sky", "lavender", "blue", "purple").contains(color) ? color : "sage"; }
     private void validateTimes(ScheduleForm f, BindingResult result) { if (f.getStartTime() != null && f.getEndTime() != null && !f.getEndTime().isAfter(f.getStartTime())) result.rejectValue("endTime", "time.order", "終了時刻は開始時刻より後にしてください。"); }
     private void validateSchedule(ScheduleForm f, BindingResult result) { if (f.getEventDate() != null && f.getEndDate() != null && f.getEndDate().isBefore(f.getEventDate())) result.rejectValue("endDate", "date.order", "終了日は開始日以降にしてください。"); validateTimes(f, result); }
     private String missing(RedirectAttributes attributes) { attributes.addFlashAttribute("errorMessage", "対象の予定が見つかりません。"); return "redirect:/"; }

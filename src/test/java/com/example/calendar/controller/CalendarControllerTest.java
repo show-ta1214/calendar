@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest @AutoConfigureMockMvc
 class CalendarControllerTest {
     @Autowired MockMvc mockMvc; @Autowired ScheduleDao scheduleDao;
+    @Test void newScheduleFormDisplaysAllFiveColors() throws Exception { mockMvc.perform(get("/schedules/new")).andExpect(status().isOk()).andExpect(content().string(containsString("class=\"color-options\""))).andExpect(content().string(containsString("value=\"sage\""))).andExpect(content().string(containsString("value=\"coral\""))).andExpect(content().string(containsString("value=\"ochre\""))).andExpect(content().string(containsString("value=\"blue\""))).andExpect(content().string(containsString("value=\"purple\""))); }
     @Test void monthPageDisplaysRequestedMonthAndHoliday() throws Exception { mockMvc.perform(get("/").param("month","2026-08")).andExpect(status().isOk()).andExpect(view().name("calendar")).andExpect(content().string(containsString("2026年8月"))).andExpect(content().string(containsString("山の日"))).andExpect(content().string(containsString("holiday"))); }
     @Test void scheduleCanBeCreatedEditedAndDeleted() throws Exception {
         mockMvc.perform(post("/schedules").param("title","打ち合わせ").param("eventDate","2026-08-18").param("endDate","2026-08-20").param("startTime","10:00").param("endTime","11:00").param("color","sage"))
