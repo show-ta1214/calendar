@@ -14,6 +14,9 @@ public class ScheduleForm {
     @NotNull(message = "日付を入力してください。")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate eventDate;
+    @NotNull(message = "終了日を入力してください。")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate endDate;
     @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) private LocalTime startTime;
     @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) private LocalTime endTime;
     @Size(max = 500, message = "メモは500文字以内で入力してください。") private String memo;
@@ -21,6 +24,7 @@ public class ScheduleForm {
 
     public String getTitle() { return title; } public void setTitle(String title) { this.title = title; }
     public LocalDate getEventDate() { return eventDate; } public void setEventDate(LocalDate eventDate) { this.eventDate = eventDate; }
+    public LocalDate getEndDate() { return endDate; } public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public LocalTime getStartTime() { return startTime; } public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
     public LocalTime getEndTime() { return endTime; } public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
     public String getMemo() { return memo; } public void setMemo(String memo) { this.memo = memo; }

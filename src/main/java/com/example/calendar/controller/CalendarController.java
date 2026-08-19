@@ -14,7 +14,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 public class CalendarController {
@@ -31,7 +30,12 @@ public class CalendarController {
         LocalDate first = shownMonth.atDay(1);
         LocalDate gridStart = first.minusDays(first.getDayOfWeek().getValue() % 7);
         LocalDate gridEnd = gridStart.plusDays(41);
-        Map<LocalDate, List<Schedule>> schedules = scheduleDao.findBetween(gridStart, gridEnd).stream().collect(Collectors.groupingBy(Schedule::getEventDate));
+        Map<LocalDate, List<Schedule>> schedules = new HashMap<>();
+        for (Schedule schedule : scheduleDao.findBetween(gridStart, gridEnd)) {
+            LocalDate rangeStart = schedule.getEventDate().isBefore(gridStart) ? gridStart : schedule.getEventDate();
+            LocalDate rangeEnd = schedule.getEndDate().isAfter(gridEnd) ? gridEnd : schedule.getEndDate();
+            for (LocalDate date = rangeStart; !date.isAfter(rangeEnd); date = date.plusDays(1)) schedules.computeIfAbsent(date, ignored -> new ArrayList<>()).add(schedule);
+        }
         Map<LocalDate, String> holidays = new HashMap<>();
         for (int year = gridStart.getYear(); year <= gridEnd.getYear(); year++) holidays.putAll(holidayService.holidays(year));
         List<CalendarDay> days = new ArrayList<>();
@@ -51,6 +55,7 @@ public class CalendarController {
     public String newSchedule(@RequestParam(required = false) String date, Model model) {
         ScheduleForm form = new ScheduleForm();
         form.setEventDate(parseDate(date));
+        form.setEndDate(form.getEventDate());
         model.addAttribute("scheduleForm", form);
         model.addAttribute("editMode", false);
         return "schedule-form";
@@ -58,7 +63,7 @@ public class CalendarController {
 
     @PostMapping("/schedules")
     public String create(@Valid @ModelAttribute ScheduleForm scheduleForm, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        validateTimes(scheduleForm, result);
+        validateSchedule(scheduleForm, result);
         if (result.hasErrors()) { model.addAttribute("editMode", false); return "schedule-form"; }
         scheduleDao.save(toSchedule(scheduleForm));
         redirectAttributes.addFlashAttribute("successMessage", "予定を登録しました。");
@@ -71,7 +76,7 @@ public class CalendarController {
         if (found.isEmpty()) return missing(redirectAttributes);
         Schedule schedule = found.get();
         ScheduleForm form = new ScheduleForm();
-        form.setTitle(schedule.getTitle()); form.setEventDate(schedule.getEventDate()); form.setStartTime(schedule.getStartTime());
+        form.setTitle(schedule.getTitle()); form.setEventDate(schedule.getEventDate()); form.setEndDate(schedule.getEndDate()); form.setStartTime(schedule.getStartTime());
         form.setEndTime(schedule.getEndTime()); form.setMemo(schedule.getMemo()); form.setColor(schedule.getColor());
         model.addAttribute("scheduleForm", form); model.addAttribute("editMode", true); model.addAttribute("scheduleId", id);
         return "schedule-form";
@@ -79,11 +84,11 @@ public class CalendarController {
 
     @PostMapping("/schedules/{id}")
     public String update(@PathVariable Long id, @Valid @ModelAttribute ScheduleForm scheduleForm, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        validateTimes(scheduleForm, result);
+        validateSchedule(scheduleForm, result);
         if (result.hasErrors()) { model.addAttribute("editMode", true); model.addAttribute("scheduleId", id); return "schedule-form"; }
         Schedule schedule = scheduleDao.findById(id).orElse(null);
         if (schedule == null) return missing(redirectAttributes);
-        schedule.update(scheduleForm.getTitle(), scheduleForm.getEventDate(), scheduleForm.getStartTime(), scheduleForm.getEndTime(), scheduleForm.getMemo(), safeColor(scheduleForm.getColor()));
+        schedule.update(scheduleForm.getTitle(), scheduleForm.getEventDate(), scheduleForm.getEndDate(), scheduleForm.getStartTime(), scheduleForm.getEndTime(), scheduleForm.getMemo(), safeColor(scheduleForm.getColor()));
         scheduleDao.save(schedule);
         redirectAttributes.addFlashAttribute("successMessage", "予定を更新しました。");
         return "redirect:/?month=" + YearMonth.from(scheduleForm.getEventDate());
@@ -98,9 +103,10 @@ public class CalendarController {
         return "redirect:/?month=" + month;
     }
 
-    private Schedule toSchedule(ScheduleForm f) { return new Schedule(f.getTitle(), f.getEventDate(), f.getStartTime(), f.getEndTime(), f.getMemo(), safeColor(f.getColor())); }
+    private Schedule toSchedule(ScheduleForm f) { return new Schedule(f.getTitle(), f.getEventDate(), f.getEndDate(), f.getStartTime(), f.getEndTime(), f.getMemo(), safeColor(f.getColor())); }
     private String safeColor(String color) { return Set.of("sage", "coral", "ochre").contains(color) ? color : "sage"; }
     private void validateTimes(ScheduleForm f, BindingResult result) { if (f.getStartTime() != null && f.getEndTime() != null && !f.getEndTime().isAfter(f.getStartTime())) result.rejectValue("endTime", "time.order", "終了時刻は開始時刻より後にしてください。"); }
+    private void validateSchedule(ScheduleForm f, BindingResult result) { if (f.getEventDate() != null && f.getEndDate() != null && f.getEndDate().isBefore(f.getEventDate())) result.rejectValue("endDate", "date.order", "終了日は開始日以降にしてください。"); validateTimes(f, result); }
     private String missing(RedirectAttributes attributes) { attributes.addFlashAttribute("errorMessage", "対象の予定が見つかりません。"); return "redirect:/"; }
     private YearMonth parseMonth(String value) { try { return value == null ? YearMonth.now() : YearMonth.parse(value); } catch (DateTimeParseException e) { return YearMonth.now(); } }
     private LocalDate parseDate(String value) { try { return value == null ? LocalDate.now() : LocalDate.parse(value); } catch (DateTimeParseException e) { return LocalDate.now(); } }
